@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+branch=$(git symbolic-ref --short HEAD)
+prev=$(git previous-branch)
+base=$(git merge-base "${prev}" "${branch}")
+git diff "${base}..${prev}" "$@"

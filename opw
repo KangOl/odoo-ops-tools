@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${1:-}" ]]; then
+    echo "Usage: opw <ID>" >&2
+    exit 1
+fi
+
+OPW=$(echo "$1" | bc)
+if [[ $OPW = 0 ]]; then
+    echo "Invalid opw: $1" >&2
+    exit 2
+fi
+
+offset=1000000
+if [[ $OPW < $offset ]]; then
+    OPW=$((OPW + offset))
+fi
+
+python3 -m webbrowser -t "https://www.odoo.com/web#view_type=form&model=project.task&id=$OPW"

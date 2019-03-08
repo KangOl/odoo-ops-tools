@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+HERE=$(dirname "$(realpath "$0")")
+source "$HERE/_active_branches.sh"
+
+branch=$(git symbolic-ref --short HEAD)
+echo "${prevs[$branch]}"

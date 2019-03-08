@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""
+Usage:
+
+    # basic usage
+    git mig-auto-msg "some changes" | git commit -F-
+
+    # if you specify coauthors, you need to preserve the verbatim generated message to avoid
+    # removing double empty lines (needed to be correctly parsed by github)
+    git mig-auto-msg -c nse "odoo.com specific" | git commit -F- --cleanup=verbatim
+
+    # when amending commit, the `--amend` flag has to be used to determine all files touched by
+    # then commit
+    git mig-auto-msg --amend | git commit -F- --amend
+
+"""
+
+from collections import defaultdict
+from email.utils import parseaddr, formataddr
+from functools import reduce
+import operator
+from subprocess import check_output
+
+import click
+
+remote = check_output(['git', 'remote', 'get-url', 'origin']).decode().strip()
+assert remote == "git@github.com:odoo/saas-migration.git"
+
+def rs(s):
+    assert s
+    if len(s) == 1:
+        return list(s)[0]
+    return '{' + ','.join(sorted(s)) + '}'
+
+def format_coauthor(coauthor):
+    p = parseaddr(coauthor)
+    if p[0]:
+        return formataddr(p)
+    # no formated correctly, search author
+    commit = check_output(["git", "rev-list", "--all", "-i", "-n1", "--author", coauthor]).decode().strip()
+    if not commit:
+        return coauthor
+    author = check_output(["git", "show", "--no-patch", "--format=%an%n%ae", commit]).decode().strip()
+    return formataddr(author.split("\n"))
+
+
+@click.command()
+@click.option('-A', 'tag', flag_value='[ADD]')
+@click.option('-F', 'tag', flag_value='[FIX]')
+@click.option('-c', 'coauthors', type=str, multiple=True)
+@click.option('--amend', is_flag=True)
+@click.argument('message', required=False)
+def main(tag=None, message=None, coauthors=(), amend=False):
+    status = check_output(['git', 'status', '--porcelain']).decode()
+    if amend:
+        status += "\n"
+        status += check_output(['git', 'show', '--format=', '--name-status', 'HEAD']).decode()
+
+    mods = defaultdict(set)
+
+    util = False
+    guess_tag = '[ADD]'
+
+    for l in status.splitlines():
+        if not l or l[0] not in 'AM':
+            continue
+        if l[0] == 'M':
+            guess_tag = '[FIX]'
+        f = l[2:].strip()
+
+        if f == 'migrations/util.py':
+            util = True
+            continue
+
+        _, module, version, *_ = f.split('/')
+        version = '.'.join(version.split('.')[:2])
+        mods[module].add(version)
+
+    agg = []
+    if util:
+        agg = ['util']
+
+    while mods:
+        common_versions = reduce(operator.and_, mods.values())
+        agg_mod = {k for k, v in mods.items() if v == common_versions}
+        if not agg_mod:
+            break
+        agg.append('{}@{}'.format(rs(agg_mod), rs(common_versions)))
+        new_mods = defaultdict(set)
+        for m in mods:
+            v = mods[m] - common_versions
+            if v:
+                new_mods[m] = v
+        mods = new_mods
+
+    for m, v in mods.items():
+        agg.append('{}@{}'.format(m, rs(v)))
+
+    if tag is None:
+        tag = guess_tag
+    output = '{} {}'.format(tag, ','.join(agg))
+    if message:
+        output += ': ' + message
+
+    if coauthors:
+        output += "\n\n\n" + "\n".join("Co-authored-by: %s" % format_coauthor(ca) for ca in coauthors)
+
+    print(output)
+
+
+if __name__ == '__main__':
+    main()

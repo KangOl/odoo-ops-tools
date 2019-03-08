@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+set -e -o pipefail
+# set -x
+
+test -n "$(command -v rg)" || exit 1
+
+function error() {
+    if [[ -t 2 ]]; then
+        echo -n -e '\033[1;31mERROR\033[0m ' >&2
+    else
+        echo -n 'ERROR ' >&2
+    fi
+    echo "$@" >&2
+    exit 1
+}
+
+if ! git diff-index --quiet HEAD -- odoo/release.py; then
+    error "release.py changed"
+fi
+
+un=$(git status --porcelain -uall | grep -cvE '^[DMARC] ' || true)
+if test "${un}" -ne 0; then
+    error "unstaged/untracked files"
+fi
+
+branch=$(git symbolic-ref --short HEAD)
+diff=$(git diff -z --cached --diff-filter=ACM HEAD)
+
+function grep_diff() {
+    found=$(echo "$diff" | rg --pcre2 -s -c "^\+.*$1" || echo 0)
+    test "${found}" -gt 0
+    return $?
+}
+
+function check_saas121() {
+    if grep_diff "\bpycompat\.(?!(csv_reader|csv_writer|to_text|reraise)\()"; then
+        error "[saas~12.1] pycompat usage found"
+    fi
+    error "debug"
+}
+
+function check_saas122() {
+    if grep_diff "\btrack_(visibility|sequence)\b"; then
+        error "[saas~12.2] track_visibility/sequence usage found"
+    fi
+}
+
+function check_saas123() {
+    # shellcheck disable=SC2016
+    if grep_diff '\$\.when\('; then
+        error '[saas~12.3] usage of `$.when()` found'
+    elif grep_diff '\$\.Deferred\('; then
+        error '[saas~12.3] usage of `$.Deferred()` found'
+    elif grep_diff '\.(done|always)\('; then
+        error '[saas~12.3] usage of methods `done` or `always` found'
+    fi
+}
+
+function check_master() {
+    check_saas123
+}
+
+func="check_${branch//[-.]/}"
+if declare -f "$func" >/dev/null; then
+    $func
+fi
+
+# error "you failed"
+
+git commit --no-edit --no-verify --cleanup=strip

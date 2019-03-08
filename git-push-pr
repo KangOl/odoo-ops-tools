@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -e
+
+if [[ -z "$GHTOKEN" ]]; then
+    echo "No \$GHTOKEN environment variable defined." >&2
+    exit 1
+fi
+
+DEBUG=0
+RESET=1
+VERBOSE=0
+
+opt=
+while getopts 'hdvr' opt; do
+  case "$opt" in
+    h)
+      echo "Usage:"
+      echo "  $0 (-h | --help)"
+      echo "  $0 [-d] [-r] [<DEST_BRANCH>]"
+      echo ""
+      echo "Options:"
+      echo "  -v      output executed commands"
+      echo "  -d      debug mode. imply -v. Do not actually push."
+      echo "  -r      do no reset to upsteam"
+      exit 0
+      ;;
+    d)
+        DEBUG=1
+      ;;
+    v)
+        VERBOSE=1
+      ;;
+    r)
+       RESET=0
+       ;;
+    ?) exit 1
+     ;;
+   *);;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+if [[ $DEBUG = 1 || $VERBOSE = 1 ]]; then
+    set -x
+fi
+
+REMOTE=$(git remote get-url origin)
+HOST=${REMOTE:0:20}
+
+if [[ "${HOST}" != "git@github.com:odoo/" ]]; then
+    echo "Invalid remote for 'origin'." >&2
+    exit 1
+fi
+REPO=${REMOTE:20}
+REPO=${REPO%.git}
+
+BRANCH=$(git symbolic-ref --short HEAD)
+EEC=$((DEBUG==1 ? 0 : 1))
+
+# ensure we have something to push
+git rev-list --count --left-right "@{upstream}...HEAD" | awk "
+    /0\\t0/      { print \"In sync with ${BRANCH}.\";     exit $EEC }
+    /0\\t[0-9]+/ { exit 0 }
+    //           { print \"You diverge from ${BRANCH}.\"; exit $EEC }
+" >&2
+
+MSG=$(git log -n1 --format=%s)
+DT=$(date -j +%y%m%d%H%M)
+
+DYNDEVBRANCH="fp-${BRANCH}-${DT}"
+DEVBRANCH=${1:-$DYNDEVBRANCH}
+
+HADCONFLICTS=$(git diff-tree --cc --pretty= HEAD | wc -l)
+PRIORITY=$((HADCONFLICTS > 0 ? 0 : 1))
+
+if [[ $DEBUG = 1 ]]; then
+    exit 1
+fi
+
+PUSH_ARGS=
+if [[ $RESET = 0 ]]; then
+    git checkout -B "${DEVBRANCH}"
+    PUSH_ARGS="--set-upsteam"
+fi
+
+git push --quiet --force ${PUSH_ARGS} dev "HEAD:${DEVBRANCH}"
+
+if [[ $RESET = 1 ]]; then
+    git reset --quiet --hard '@{upstream}'
+fi
+
+RESP=$(http --json --body --pretty=none "https://api.github.com/repos/odoo/${REPO}/pulls" \
+    Accept:application/vnd.github.v3+json \
+    "Authorization:token ${GHTOKEN}" \
+    title="${MSG}" head="odoo-dev:${DEVBRANCH}" base="${BRANCH}" \
+)
+PR=$(echo "${RESP}" | jq -r ".number")
+
+http --json --print= --pretty=none "https://api.github.com/repos/odoo/${REPO}/issues/${PR}/comments" \
+    Accept:application/vnd.github.v3+json \
+    "Authorization:token ${GHTOKEN}" \
+    body="robodoo merge review+ priority=$PRIORITY"
+
+URL=$(echo "${RESP}" | jq -r ".html_url")
+echo "${URL}"
