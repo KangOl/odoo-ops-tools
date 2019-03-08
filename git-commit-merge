@@ -37,7 +37,6 @@ function check_saas121() {
     if grep_diff "\bpycompat\.(?!(csv_reader|csv_writer|to_text|reraise)\()"; then
         error "[saas~12.1] pycompat usage found"
     fi
-    error "debug"
 }
 
 function check_saas122() {
