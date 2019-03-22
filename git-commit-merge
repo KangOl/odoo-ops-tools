@@ -53,6 +53,8 @@ function check_saas123() {
         error '[saas~12.3] usage of `$.Deferred()` found'
     elif grep_diff '\.(done|always)\('; then
         error '[saas~12.3] usage of methods `done` or `always` found'
+    elif grep_diff '\bweb_editor\.base\b'; then
+        error '[saas~12.3] usage of web_editor.base found'
     fi
 }
 
