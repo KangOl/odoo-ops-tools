@@ -3,6 +3,30 @@
 set -e -o pipefail
 # set -x
 
+## ------------- options handling
+VERIFY=true
+COMMIT=true
+
+GETOPT="/usr/local/opt/gnu-getopt/bin/getopt"
+if [[ ! -x "$GETOPT" ]]; then
+    GETOPT=$(type -P getopt)
+fi
+
+OPTS=$($GETOPT -o '' -l no-verify,no-commit -n git-commit-merge -- "$@")
+
+eval set -- "$OPTS"
+
+while true; do
+  case "$1" in
+    --no-verify ) VERIFY=false; shift ;;
+    --no-commit ) COMMIT=false; shift ;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
+done
+
+# --------------------
+
 test -n "$(command -v rg)" || exit 1
 test -n "$(command -v lsdiff)" || exit 1
 
@@ -80,11 +104,15 @@ function check_master() {
     check_saas123
 }
 
-func="check_${branch//[-.]/}"
-if declare -f "$func" >/dev/null; then
-    $func
+if [[ $VERIFY = true ]]; then
+    func="check_${branch//[-.]/}"
+    if declare -f "$func" >/dev/null; then
+        $func
+    fi
 fi
 
-# error "you failed"
-
-git commit --no-edit --no-verify --cleanup=strip
+if [[ $COMMIT = true ]]; then
+    git commit --no-edit --no-verify --cleanup=strip
+else
+    echo "Automatic verification went well; stopped before committing as requested"
+fi
