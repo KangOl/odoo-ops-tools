@@ -4,6 +4,7 @@ set -e -o pipefail
 # set -x
 
 test -n "$(command -v rg)" || exit 1
+test -n "$(command -v lsdiff)" || exit 1
 
 
 function em() {
@@ -36,6 +37,13 @@ fi
 
 branch=$(git symbolic-ref --short HEAD)
 diff=$(git diff -z --cached --diff-filter=ACM HEAD)
+
+python="python3"
+if [[ ${branch//[-.sa]/} -lt 110 ]]; then
+    python="python2"
+fi
+
+lsdiff -i '*.py' <<< "$diff" | xargs -r -- "$python" -m compileall -q
 
 function grep_diff() {
     found=$(echo "$diff" | rg --pcre2 -s -c "^\+.*$1" || echo 0)
