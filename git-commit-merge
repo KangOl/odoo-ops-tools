@@ -7,7 +7,7 @@ test -n "$(command -v rg)" || exit 1
 
 function error() {
     if [[ -t 2 ]]; then
-        echo -n -e '\033[1;31mERROR\033[0m ' >&2
+        echo -n -e '\033[1;31mERROR\033[0m 🙅 ' >&2
     else
         echo -n 'ERROR ' >&2
     fi
