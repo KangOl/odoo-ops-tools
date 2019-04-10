@@ -29,6 +29,14 @@ done
 
 test -n "$(command -v rg)" || exit 1
 test -n "$(command -v lsdiff)" || exit 1
+test -n "$(command -v grepdiff)" || exit 1
+
+tmpfile=$(mktemp)
+function cleanup {
+    rm -rf "$tmpfile"
+}
+trap cleanup EXIT
+
 
 
 function em() {
@@ -50,6 +58,19 @@ function error() {
     exit 1
 }
 
+# check version of grepdiff
+# needs https://github.com/twaugh/patchutils/pull/25 and https://github.com/twaugh/patchutils/pull/26
+cat << EOF | grepdiff --only-match=add '\ba' > "$tmpfile"
+--- f
++++ f
+@@ -0 +1 @@
++a
+EOF
+# shellcheck disable=SC2016
+cat << EOF | cmp - "$tmpfile" 2>/dev/null || error 'wrong `grepdiff` value (should be compiled with PCRE2)'
+f
+EOF
+
 if ! git diff-index --quiet HEAD -- odoo/release.py; then
     error "release.py changed"
 fi
@@ -69,40 +90,40 @@ fi
 
 lsdiff -i '*.py' <<< "$diff" | xargs -r -- "$python" -m compileall -q
 
-function grep_diff() {
-    found=$(echo "$diff" | rg --pcre2 -s -c "^\+.*$1" || echo 0)
-    test "${found}" -gt 0
-    return $?
+
+function assert_not_in_diff() {
+    pattern=$1
+    unpat=$(awk '{ print gensub(/\\([.[(|)\]$])/, "\\1", "g") }' <<< "$pattern")
+    message=${2:-"usage of $(em "$unpat") found."}
+    found=$(grepdiff -E --only-match=add "$pattern" <<< "$diff")
+    test -z "$found" || error -e "[$branch] $message\n$found"
 }
 
+# -------- checks
+
 function check_saas121() {
-    if grep_diff "\bpycompat\.(?!(csv_reader|csv_writer|to_text|reraise)\()"; then
-        error "[saas~12.1] pycompat usage found"
-    fi
+    COMPAT_OK="(csv_reader|csv_writer|to_text|reraise)"
+    assert_not_in_diff \
+        "(\bpycompat\.(?!$COMPAT_OK\())|(\bfrom odoo\.tools\.pycompat import (?!$COMPAT_OK(, ?)?)+)"\
+        "$(em pycompat) usage found"
 }
 
 function check_saas122() {
-    if grep_diff "\btrack_(visibility|sequence)\b"; then
-        error "[saas~12.2] track_visibility/sequence usage found"
-    fi
+    assert_not_in_diff "\btrack_(visibility|sequence)\b" "$(em "track_visibility/sequence") usage found"
 }
 
 function check_saas123() {
-    # shellcheck disable=SC2016
-    if grep_diff '\$\.when\('; then
-        error '[saas~12.3] usage of `$.when()` found'
-    elif grep_diff '\$\.Deferred\('; then
-        error '[saas~12.3] usage of `$.Deferred()` found'
-    elif grep_diff '\.(done|always)\('; then
-        error '[saas~12.3] usage of methods `done` or `always` found'
-    elif grep_diff '\bweb_editor\.base\b'; then
-        error '[saas~12.3] usage of web_editor.base found'
-    fi
+    assert_not_in_diff '\$\.when\('
+    assert_not_in_diff '\$\.Deferred\('
+    assert_not_in_diff '\.(done|always)\('
+    assert_not_in_diff '\bweb_editor\.base\b'
 }
 
 function check_master() {
     return
 }
+
+# --------- main
 
 if [[ $VERIFY = true ]]; then
     func="check_${branch//[-.]/}"
