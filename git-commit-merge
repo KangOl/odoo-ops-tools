@@ -101,7 +101,7 @@ function check_saas123() {
 }
 
 function check_master() {
-    check_saas123
+    return
 }
 
 if [[ $VERIFY = true ]]; then
