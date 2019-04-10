@@ -101,6 +101,11 @@ function assert_not_in_diff() {
 
 # -------- checks
 
+function check_120() {
+    # can have false positives, use `--no-verify` in this case
+    assert_not_in_diff '\.compute\(' "the method $(em compute) of $(em res.currency) is deprecated"
+}
+
 function check_saas121() {
     COMPAT_OK="(csv_reader|csv_writer|to_text|reraise)"
     assert_not_in_diff \
