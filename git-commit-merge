@@ -84,7 +84,7 @@ branch=$(git symbolic-ref --short HEAD)
 diff=$(git diff -z --cached --diff-filter=ACM HEAD)
 
 python="python3"
-if [[ ${branch//[-.sa]/} -lt 110 ]]; then
+if [[ "$branch" != "master" && ${branch//[-.sa]/} -lt 110 ]]; then
     python="python2"
 fi
 
