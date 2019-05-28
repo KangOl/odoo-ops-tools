@@ -123,6 +123,7 @@ function check_saas123() {
     assert_not_in_diff js '\$\.Deferred\('
     assert_not_in_diff js '\.(done|always)\('
     assert_not_in_diff js '\bweb_editor\.base\b'
+    assert_not_in_diff js 'QUnit\..+,(?! async) function' "QUnit $(em "non async function") found"
 }
 
 function check_master() {
