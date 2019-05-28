@@ -133,6 +133,9 @@ function check_master() {
 # --------- main
 
 if [[ $VERIFY = true ]]; then
+    assert_not_in_diff js "\bdebugger\b" "$(em debugger) keyword found"
+    assert_not_in_diff py "\b(set_trace|pu\.db|breakpoint|import q)\b" "debugging keyword found"
+
     func="check_${branch//[-.]/}"
     if declare -f "$func" >/dev/null; then
         $func
