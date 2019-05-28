@@ -80,6 +80,17 @@ if test "${un}" -ne 0; then
     error "unstaged/untracked files"
 fi
 
+# builtin trailing spaces and conflits markers check
+# NOTE: for po(t) files, you may want to deactivate whitespace checks via a (global) `.gitattribute` file
+:<<'GITATTRIBUTE'
+*.po whitespace=-blank-at-eol,-blank-at-eof
+*.pot whitespace=-blank-at-eol,-blank-at-eof
+GITATTRIBUTE
+
+if ! git diff-index --check --cached HEAD -- >&2; then
+    error "git diff --check failed"
+fi
+
 branch=$(git symbolic-ref --short HEAD)
 diff=$(git diff -z --cached --diff-filter=ACM HEAD)
 
