@@ -22,15 +22,15 @@ ALLMODS=$(fd '__openerp|manifest__.py' . -e py -x basename '{//}' | grep -vE "$I
 ALLALLMODS=$(fd '__openerp|manifest__.py' . -e py -x basename '{//}'| tr '\n' ,)
 
 opt=
-while getopts 'hnkKreEtTwvl:' opt; do
+while getopts 'hnNkKreEtTwvl:' opt; do
   case "$opt" in
     h)
       echo "Usage:"
       echo "  $0 (-h | --help)"
-      echo "  $0 [-k -n] [-e | -E] [-w | -v] [-l <logfile>] [<MODS> [<ODOO_OPTIONS>...]]"
+      echo "  $0 [-k [-n | -N]] [-e | -E] [-w | -v] [-l <logfile>] [<MODS> [<ODOO_OPTIONS>...]]"
       echo ""
       echo "Options:"
-      echo "  -n      do not execute test. Only install module (with demo data). aka dry-run."
+      echo "  -n, -N  do not execute test. Only install module (without demo data if -N). aka dry-run."
       echo "  -k      keep existing \`test\` database"
       echo "  -e, -E  include Enterprise in addon-path (trust branches if -E)"
       echo "  -t, -T  include Themes in addon-path (trust branches if -T)"
@@ -41,6 +41,9 @@ while getopts 'hnkKreEtTwvl:' opt; do
       ;;
     n)
         TEST_ENABLED=
+      ;;
+    N)
+        TEST_ENABLED="--without-demo=1"
       ;;
     k)
         KEEP=u
