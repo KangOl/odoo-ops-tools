@@ -92,10 +92,11 @@ lsdiff -i '*.py' <<< "$diff" | xargs -r -- "$python" -m compileall -q
 
 
 function assert_not_in_diff() {
-    pattern=$1
+    ext=$1
+    pattern=$2
     unpat=$(awk '{ print gensub(/\\([.[(|)\]$])/, "\\1", "g") }' <<< "$pattern")
-    message=${2:-"usage of $(em "$unpat") found."}
-    found=$(grepdiff -E --only-match=add "$pattern" <<< "$diff")
+    message=${3:-"usage of $(em "$unpat") found."}
+    found=$(grepdiff -i "*.$ext" --only-match=add "$pattern" <<< "$diff")
     test -z "$found" || error -e "[$branch] $message\n$found"
 }
 
@@ -103,25 +104,25 @@ function assert_not_in_diff() {
 
 function check_120() {
     # can have false positives, use `--no-verify` in this case
-    assert_not_in_diff '\.compute\(' "the method $(em compute) of $(em res.currency) is deprecated"
+    assert_not_in_diff py '\.compute\(' "the method $(em compute) of $(em res.currency) is deprecated"
 }
 
 function check_saas121() {
     COMPAT_OK="(csv_reader|csv_writer|to_text|reraise)"
-    assert_not_in_diff \
+    assert_not_in_diff py \
         "(\bpycompat\.(?!$COMPAT_OK\())|(\bfrom odoo\.tools\.pycompat import (?!$COMPAT_OK(, ?)?)+)"\
         "$(em pycompat) usage found"
 }
 
 function check_saas122() {
-    assert_not_in_diff "\btrack_(visibility|sequence)\b" "$(em "track_visibility/sequence") usage found"
+    assert_not_in_diff py "\btrack_(visibility|sequence)\b" "$(em "track_visibility/sequence") usage found"
 }
 
 function check_saas123() {
-    assert_not_in_diff '\$\.when\('
-    assert_not_in_diff '\$\.Deferred\('
-    assert_not_in_diff '\.(done|always)\('
-    assert_not_in_diff '\bweb_editor\.base\b'
+    assert_not_in_diff js '\$\.when\('
+    assert_not_in_diff js '\$\.Deferred\('
+    assert_not_in_diff js '\.(done|always)\('
+    assert_not_in_diff js '\bweb_editor\.base\b'
 }
 
 function check_master() {
