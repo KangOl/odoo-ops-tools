@@ -138,7 +138,8 @@ function check_saas123() {
 }
 
 function check_master() {
-    return
+    assert_not_in_diff py '\benv.(?:do_)?in_onchange\b'
+    assert_not_in_diff py '\benv\.user\.company_id\b' "Use $(em env.company) instead of $(em env.user.company_id)"
 }
 
 # --------- main
