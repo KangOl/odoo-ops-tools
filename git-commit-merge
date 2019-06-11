@@ -118,14 +118,11 @@ function check_120() {
     assert_not_in_diff py '\.compute\(' "the method $(em compute) of $(em res.currency) is deprecated"
 }
 
-function check_saas121() {
+function check_saas122() {
     COMPAT_OK="(csv_reader|csv_writer|to_text|reraise)"
     assert_not_in_diff py \
         "(\bpycompat\.(?!$COMPAT_OK\())|(\bfrom odoo\.tools\.pycompat import (?!$COMPAT_OK(, ?)?)+)"\
         "$(em pycompat) usage found"
-}
-
-function check_saas122() {
     assert_not_in_diff py "\btrack_(visibility|sequence)\b" "$(em "track_visibility/sequence") usage found"
 }
 
