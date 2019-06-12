@@ -134,7 +134,7 @@ function check_saas123() {
     assert_not_in_diff js 'QUnit\..+,(?! async) function' "QUnit $(em "non async function") found"
 }
 
-function check_master() {
+function check_saas124() {
     assert_not_in_diff py '\benv.(?:do_)?in_onchange\b'
     assert_not_in_diff py '\benv\.user\.company_id\b' "Use $(em env.company) instead of $(em env.user.company_id)"
 }
