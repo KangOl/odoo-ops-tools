@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-branches=(7.0 8.0 saas-6 9.0 10.0 saas-14 saas-15 11.0 saas-11.3 12.0 saas-12.2 saas-12.3 master)
+branches=(7.0 8.0 saas-6 9.0 10.0 saas-14 saas-15 11.0 saas-11.3 12.0 saas-12.2 saas-12.3 saas-12.4 master)
 declare -A prevs
 declare -A nexts
 for i in "${!branches[@]}"; do
