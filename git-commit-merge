@@ -105,7 +105,7 @@ lsdiff -i '*.py' <<< "$diff" | xargs -r -- "$python" -m compileall -q
 function assert_not_in_diff() {
     ext=$1
     pattern=$2
-    unpat=$(awk '{ print gensub(/\\([.[(|)\]$])/, "\\1", "g") }' <<< "$pattern")
+    unpat=$(awk '{ print gensub(/\\([.[(|)\]$])|\\b/, "\\1", "g") }' <<< "$pattern")
     message=${3:-"usage of $(em "$unpat") found."}
     found=$(grepdiff -i "*.$ext" --only-match=add "$pattern" <<< "$diff")
     test -z "$found" || error -e "[$branch] $message\n$found"
