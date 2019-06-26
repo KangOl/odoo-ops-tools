@@ -73,7 +73,7 @@ def main(tag=None, message=None, coauthors=(), amend=False):
             continue
 
         _, module, version, *_ = f.split('/')
-        version = '.'.join(version.split('.')[:2])
+        version = '.'.join(version.split('.')[:2]) if version != '0.0.0' else '0.0.0'
         mods[module].add(version)
 
     agg = []
