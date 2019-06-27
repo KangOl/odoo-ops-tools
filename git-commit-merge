@@ -107,8 +107,13 @@ function assert_not_in_diff() {
     pattern=$2
     unpat=$(awk '{ print gensub(/\\([.[(|)\]$])|\\b/, "\\1", "g") }' <<< "$pattern")
     message=${3:-"usage of $(em "$unpat") found."}
-    # shellcheck disable=SC2086  # we need globbing
+
+    # deactivate shell globbing. The `-i` arguments are directly used by `grepdiff` (via fnmatch).
+    set -o noglob
+    # shellcheck disable=SC2086
     found=$(grepdiff $ext_filtering --only-match=add "$pattern" <<< "$diff")
+    set +o noglob
+
     test -z "$found" || error -e "[$branch] $message\n$found"
 }
 
