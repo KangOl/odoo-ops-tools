@@ -149,6 +149,11 @@ function check_saas124() {
     assert_not_in_diff py '\bself\.phantom_js\(' "Use $(em self.start_tour) helper instead of $(em self.phantom_js)"
 }
 
+function check_master() {
+    assert_not_in_diff py '@api\.multi\b'
+    assert_not_in_diff py '\.sudo\((?!True\)|False\)|\))' "Use $(em with_user) to change active user"
+}
+
 # --------- main
 
 if [[ $VERIFY = true ]]; then
