@@ -125,16 +125,14 @@ function check_120() {
     assert_not_in_diff js,xml "\bhidden\b" "Use $(em d-none) class instead of $(em hidden)"
 }
 
-function check_saas122() {
+function check_saas123() {
     COMPAT_OK="(csv_reader|csv_writer|to_text|reraise)"
     assert_not_in_diff py \
         "(\bpycompat\.(?!$COMPAT_OK\())|(\bfrom odoo\.tools\.pycompat import (?!$COMPAT_OK(, ?)?)+)"\
         "$(em pycompat) usage found"
     assert_not_in_diff py "\btrack_(visibility|sequence)\b" "$(em "track_visibility/sequence") usage found"
     assert_not_in_diff xml "\b@class\b" "Use $(em hasclass\(\)) in xpath expression"
-}
 
-function check_saas123() {
     assert_not_in_diff js '\$\.when\('
     assert_not_in_diff js '\$\.Deferred\('
     assert_not_in_diff js '\.(done|always)\('
