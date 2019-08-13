@@ -141,6 +141,7 @@ function check_saas123() {
 }
 
 function check_saas124() {
+    assert_not_in_diff '*' '\baccount\.invoice\b'
     assert_not_in_diff py '\benv.(?:do_)?in_onchange\b'
     assert_not_in_diff py '\benv\.user\.company_id\b' "Use $(em env.company) instead of $(em env.user.company_id)"
     assert_not_in_diff py '\b_company_default_get\b'
@@ -151,6 +152,7 @@ function check_saas124() {
 function check_master() {
     assert_not_in_diff py '@api\.multi\b'
     assert_not_in_diff py '\.sudo\((?!True\)|False\)|\))' "Use $(em with_user) to change active user"
+    assert_not_in_diff py '\boldname\b'
 }
 
 # --------- main
