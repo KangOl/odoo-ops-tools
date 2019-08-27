@@ -153,6 +153,13 @@ function check_master() {
     assert_not_in_diff py '@api\.multi\b'
     assert_not_in_diff py '\.sudo\((?!True\)|False\)|\))' "Use $(em with_user) to change active user"
     assert_not_in_diff py '\boldname\b'
+    assert_not_in_diff py '\bcontext_dependent\b'
+    assert_not_in_diff py '\brelated_sudo\b'
+
+    # even if there is little to no chance that these patterns are used...
+    assert_not_in_diff py '\benv.(?:do_)?in_draft\b'
+    assert_not_in_diff py '\b\._recompute_todo\b'
+    assert_not_in_diff py '\benv\.norecompute\b'
 }
 
 # --------- main
