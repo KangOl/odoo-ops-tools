@@ -160,6 +160,10 @@ function check_saas125() {
     assert_not_in_diff py '\benv.(?:do_)?in_draft\b'
     assert_not_in_diff py '\b\._recompute_todo\b'
     assert_not_in_diff py '\benv\.norecompute\b'
+
+    # see odoo/odoo@58a2ffa26f1a3b0f9630ce16d11b758d18e20a21
+    assert_not_in_diff py,xml '\bimage_(original|big|large|medium|small)\b' \
+        "Use $(em image_DDD) instead [original => 1920; big => 1024; large => 256; medium => 128; small => 64]"
 }
 
 # --------- main
