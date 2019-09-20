@@ -166,6 +166,10 @@ function check_saas125() {
         "Use $(em image_DDD) instead [original => 1920; big => 1024; large => 256; medium => 128; small => 128]"
 }
 
+function check_master() {
+    assert_not_in_diff py '\bassertEquals\b'
+}
+
 # --------- main
 
 if [[ $VERIFY = true ]]; then
