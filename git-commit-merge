@@ -167,7 +167,11 @@ function check_saas125() {
 }
 
 function check_master() {
-    assert_not_in_diff py '\bassertEquals\b'
+    assert_not_in_diff py '\b(?:import|from) openerp\b'
+    assert_not_in_diff py '\bassert_\b'
+    assert_not_in_diff py '\bassert(?:Not|Almost)?Equals\b'
+    assert_not_in_diff py '\bassertRaisesRegexp\b'
+    assert_not_in_diff py '\bassertRegexpMatches\b'
 }
 
 # --------- main
