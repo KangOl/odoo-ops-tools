@@ -124,12 +124,36 @@ if [[ -f openerp-server ]]; then
     B=openerp-server
 fi
 
+LOGHANDLERS="
+    --log-handler=:${LOGLEVEL} \
+    --log-handler=${D}.modules.loading:WARN --log-handler=${D}.modules.graph:CRITICAL \
+    --log-handler=${D}.modules.module:INFO --log-handler=${D}.modules.registry:INFO \
+    --log-handler=${D}.tests.common:INFO \
+"
+
 if [[ "$KEEP" == "N" ]]; then
     IU="-i"
     set -x
     dropdb --if-exists "$DB"
     rm -rf "${FS:?}/${DB}"
     createdb "$DB"
+    { set +x; } 2>/dev/null
+
+    _L10N=$(echo -n "$MODS" | awk -vRS=, -vFS=_ '/^l10n_/{print $2}' | sort | uniq | tr '\n' ' ')
+    declare -a L10N=($_L10N)
+    if test "${#L10N[@]}" -gt 0; then
+        set -x
+        ./$B --addons-path="${AD}./addons" \
+            --db-filter="^${DB}\$" --pidfile=/tmp/odoo.pid --stop-after-init \
+            --xmlrpc-port=${PORT} \
+            ${LOGHANDLERS} \
+            --logfile="${LOGFILE}" -i base -d "$DB"
+        psql -d "$DB" -c "UPDATE res_partner SET country_id = (SELECT id FROM res_country WHERE lower(code)='${L10N[0]}')"
+
+        { set +x; } 2>/dev/null
+        unset L10N[0]
+        set -x
+    fi
 else
     IU="-$KEEP"     # yuck
     # TODO determine $IU automatically depending of module(s) state
@@ -140,10 +164,7 @@ fi
     --db-filter="^${DB}\$" --pidfile=/tmp/odoo.pid --stop-after-init \
     ${TEST_ENABLED} \
     --xmlrpc-port=${PORT} \
-    --log-handler=:${LOGLEVEL} \
-    --log-handler=${D}.modules.loading:WARN --log-handler=${D}.modules.graph:CRITICAL \
-    --log-handler=${D}.modules.module:INFO --log-handler=${D}.modules.registry:INFO \
-    --log-handler=${D}.tests.common:INFO \
+    ${LOGHANDLERS} \
     --logfile="${LOGFILE}" $IU "${MODS}" -d "$DB" "$@"
 
 if [[ "$RUN" == "Y" ]]; then
