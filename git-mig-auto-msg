@@ -68,7 +68,7 @@ def main(tag=None, message=None, coauthors=(), amend=False):
             guess_tag = '[FIX]'
         f = l[2:].strip()
 
-        if f == 'migrations/util.py':
+        if f in {"migrations/util.py", "migrations/report-migration.xml"}:
             util = True
             continue
 
