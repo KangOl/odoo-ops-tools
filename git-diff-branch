@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# == 0 ]]; then
+    echo "Usage:" >&2
+    echo "  git diff-branch BRANCH [GIT_DIFF_ARGUMENTS]" >&2
+    exit 1
+fi
+
+MATCH=$1
+shift
+
+: "${REMOTE:=origin}"
+REMOTE_URL=$(git remote get-url "$REMOTE")
+if [[ "${REMOTE_URL%/*}" != "git@github.com:odoo" ]]; then
+    echo "This tool only works on github.com/odoo repositories. URL of remote ${REMOTE} is '${REMOTE_URL}'." >&2
+    exit 1
+fi
+
+PREV=$(
+    git branch --remotes --list "${REMOTE}"'/*' | awk -F/ '!/tmp|staging|nightly|HEAD|master/ {
+        branch=$2;
+        split(gensub("saas-", "", 1, branch), a, ".");
+        if(length(a)==1) {
+            a[2] = a[1];
+            switch(a[2]) {
+                case /^[1-5]$/:
+                    a[1]=7;
+                    break;
+                case 6:
+                    a[1]=8;
+                    break;
+                case /^[789]$|^1[0123]$/:
+                    a[1]=9;
+                    break;
+                case /^1[45678]$/:
+                    a[1]=10;
+                    break;
+                default:
+                    exit 1;
+            };
+        }
+        printf("%s.%02s:%s\n", a[1], a[2], branch);
+    }' | sort -n | awk -F: --assign "MATCH=$MATCH" '{
+        branch = $2;
+        if (branch == MATCH) {
+            print prev
+        }
+    }
+    { prev = branch }'
+)
+
+if [[ -z "$PREV" ]]; then
+    echo "Cannot determine previous branch of $MATCH" >&2
+    exit 1
+fi
+
+git diff --no-prefix "${REMOTE}/${PREV}..${REMOTE}/${MATCH}" "$@"
