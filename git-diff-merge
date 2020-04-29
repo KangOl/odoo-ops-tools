@@ -2,4 +2,4 @@
 set -e
 
 cd "${GIT_PREFIX:-.}"
-git diff --cached "$@" | filterdiff -x '*.po' -x '*.pot' | colordiff | diff-so-fancy | awk '$0 != p || $0 ~ /^─+$/ { print $0 } { p=$0 }' | less --tabs=4 -RFX
+git diff --cached "$@" | filterdiff -x '*.po' -x '*.pot' | delta --dark --theme=DarkNeon
