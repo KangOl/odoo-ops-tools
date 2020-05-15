@@ -18,12 +18,15 @@ if [[ "${REMOTE_URL%/*}" != "git@github.com:odoo" ]]; then
 fi
 
 PREV=$(
-    git branch --remotes --list "${REMOTE}"'/*' | awk -F/ '!/tmp|staging|nightly|HEAD|master/ {
+    git branch --remotes --list "${REMOTE}"'/*' | awk -F/ '!/tmp|staging|nightly|HEAD/ {
         branch=$2;
         split(gensub("saas-", "", 1, branch), a, ".");
         if(length(a)==1) {
             a[2] = a[1];
             switch(a[2]) {
+                case "master":
+                    a[1] = a[2] = 9999;
+                    break;
                 case /^[1-5]$/:
                     a[1]=7;
                     break;
