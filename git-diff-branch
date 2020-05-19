@@ -13,37 +13,41 @@ shift
 : "${REMOTE:=origin}"
 REMOTE_URL=$(git remote get-url "$REMOTE")
 if [[ "${REMOTE_URL%/*}" != "git@github.com:odoo" ]]; then
-    echo "This tool only works on github.com/odoo repositories. URL of remote ${REMOTE} is '${REMOTE_URL}'." >&2
+    echo "🚫 This tool only works on github.com/odoo repositories. URL of remote ${REMOTE} is '${REMOTE_URL}'." >&2
     exit 1
 fi
 
 PREV=$(
     git branch --remotes --list "${REMOTE}"'/*' | awk -F/ '!/tmp|staging|nightly|HEAD/ {
         branch=$2;
-        split(gensub("saas-", "", 1, branch), a, ".");
-        if(length(a)==1) {
+        len = split(gensub("saas-", "", 1, branch), a, ".");
+        if(len == 1) {
             a[2] = a[1];
             switch(a[2]) {
                 case "master":
                     a[1] = a[2] = 9999;
                     break;
                 case /^[1-5]$/:
-                    a[1]=7;
+                    a[1] = 7;
                     break;
                 case 6:
-                    a[1]=8;
+                    a[1] = 8;
                     break;
                 case /^[789]$|^1[0123]$/:
-                    a[1]=9;
+                    a[1] = 9;
                     break;
                 case /^1[45678]$/:
-                    a[1]=10;
+                    a[1] = 10;
                     break;
                 default:
-                    exit 1;
+                    a[1] = -1;
             };
         }
-        printf("%s.%02s:%s\n", a[1], a[2], branch);
+        else if (len != 2 || int(a[1]) < 1 || int(a[2]) != a[2])
+            a[1] = -1;
+
+        if (a[1] != -1)
+            printf("%d.%02d:%s\n", a[1], a[2], branch);
     }' | sort -n | awk -F: --assign "MATCH=$MATCH" '{
         branch = $2;
         if (branch == MATCH) {
@@ -54,7 +58,7 @@ PREV=$(
 )
 
 if [[ -z "$PREV" ]]; then
-    echo "Cannot determine previous branch of $MATCH" >&2
+    echo "🙁 Cannot determine previous branch of $MATCH" >&2
     exit 1
 fi
 
