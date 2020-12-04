@@ -22,12 +22,12 @@ ALLMODS=$(fd '__openerp|manifest__.py' . -e py -x basename '{//}' | grep -vE "$I
 ALLALLMODS=$(fd '__openerp|manifest__.py' . -e py -x basename '{//}'| tr '\n' ,)
 
 opt=
-while getopts 'hnNkKreEtTwvl:' opt; do
+while getopts 'hnNkKrseEtTwvl:' opt; do
   case "$opt" in
     h)
       echo "Usage:"
       echo "  $0 (-h | --help)"
-      echo "  $0 [-k [-n | -N]] [-e | -E] [-w | -v] [-l <logfile>] [<MODS> [<ODOO_OPTIONS>...]]"
+      echo "  $0 [-k [-n | -N]] [-e | -E] [-w | -v] [-r | -s] [-l <logfile>] [<MODS> [<ODOO_OPTIONS>...]]"
       echo ""
       echo "Options:"
       echo "  -n, -N  do not execute test. Only install module (without demo data if -N). aka dry-run."
@@ -36,6 +36,8 @@ while getopts 'hnNkKreEtTwvl:' opt; do
       echo "  -t, -T  include Themes in addon-path (trust branches if -T)"
       echo "  -w      log all warnings"
       echo "  -v      log info"
+      echo "  -r      run odoo after db creation"
+      echo "  -s      run odoo shell after db creation"
       echo "  -l <logfile>"
       exit 0
       ;;
@@ -53,6 +55,9 @@ while getopts 'hnNkKreEtTwvl:' opt; do
       ;;
     r)
         RUN=Y
+      ;;
+    s)
+        RUN=S
       ;;
     e | E)
         pushd "${ROOT}/enterprise" >/dev/null
@@ -167,8 +172,10 @@ fi
     ${LOGHANDLERS} \
     --logfile="${LOGFILE}" $IU "${MODS}" -d "$DB" "$@"
 
-if [[ "$RUN" == "Y" ]]; then
-    ./$B --addons-path="${AD}./addons" \
+if [[ "$RUN" != "N" ]]; then
+    COMMAND=
+    if [[ "$RUN" == "S" ]]; then COMMAND=shell; fi;
+    ./$B --addons-path="${AD}./addons" $COMMAND \
         --db-filter="^${DB}\$" --pidfile=/tmp/odoo.pid \
         --logfile="${LOGFILE}" -d "$DB" "$@"
 fi
