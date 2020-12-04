@@ -85,7 +85,7 @@ def main(tag=None, message=None, coauthors=(), amend=False):
         agg_mod = {k for k, v in mods.items() if v == common_versions}
         if not agg_mod:
             break
-        agg.append('{}@{}'.format(rs(agg_mod), rs(common_versions)))
+        agg.append('{}/{}'.format(rs(agg_mod), rs(common_versions)))
         new_mods = defaultdict(set)
         for m in mods:
             v = mods[m] - common_versions
@@ -94,7 +94,7 @@ def main(tag=None, message=None, coauthors=(), amend=False):
         mods = new_mods
 
     for m, v in mods.items():
-        agg.append('{}@{}'.format(m, rs(v)))
+        agg.append('{}/{}'.format(m, rs(v)))
 
     if tag is None:
         tag = guess_tag
