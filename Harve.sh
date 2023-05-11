@@ -7,6 +7,12 @@ set -euo pipefail
 
 test "${DEBUG:-0}" != 0 && set -x
 
+: "${GH_TOKEN:?Please set a GH_TOKEN environment variable}"
+
+# Ensure minimal git version
+printf '%s\n%s\n' 2.23 "$(git --version | cut -d" " -f3)" | sort --check=quiet --version-sort || \
+    { echo "ERROR: outdated git version. Git >= 2.23 is required." >&2; exit 1; }
+
 workdir="${XDG_CACHE_HOME:-${HOME}/.cache}/Harve"
 mkdir -p "$workdir"
 venv="${workdir}/.venv"
