@@ -2,4 +2,4 @@
 set -e
 
 cd "${GIT_PREFIX:-.}"
-git diff --cached "$@" | filterdiff -x '*.po' -x '*.pot' | delta --dark --theme=DarkNeon
+git diff --cached "$@" | filterdiff -x '*.po' -x '*.pot' | delta --dark --syntax-theme=DarkNeon
