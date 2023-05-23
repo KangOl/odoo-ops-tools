@@ -3,12 +3,19 @@ set -euo pipefail
 
 if [[ $# == 0 ]]; then
     echo "Usage:" >&2
-    echo "  git diff-branch BRANCH [GIT_DIFF_ARGUMENTS]" >&2
+    echo "  git diff-branch [-m] BRANCH [GIT_DIFF_ARGUMENTS]" >&2
     exit 1
 fi
 
 MATCH=$1
 shift
+
+MAJOR=N
+if [[ "$MATCH" == "-m" ]]; then
+    MAJOR=Y
+    MATCH=$1
+    shift
+fi;
 
 : "${REMOTE:=origin}"
 REMOTE_URL=$(git remote get-url "$REMOTE")
@@ -17,8 +24,14 @@ if [[ "${REMOTE_URL%/*}" != "git@github.com:odoo" ]]; then
     exit 1
 fi
 
+AWK="awk"
+if command -v gawk >/dev/null; then
+    AWK="gawk"
+fi
+
 PREV=$(
-    git branch --remotes --list "${REMOTE}"'/*' | awk -F/ '!/tmp|staging|nightly|HEAD/ {
+    # shellcheck disable=SC2016
+    git branch --remotes --list "${REMOTE}"'/*' | $AWK -F/ '!/tmp|staging|nightly|HEAD/ {
         branch=$2;
         len = split(gensub("saas-", "", 1, branch), a, ".");
         if(len == 1) {
@@ -48,13 +61,17 @@ PREV=$(
 
         if (a[1] != -1)
             printf("%d.%02d:%s\n", a[1], a[2], branch);
-    }' | sort -n | awk -F: --assign "MATCH=$MATCH" '{
+    }' | sort -n | $AWK -F: --assign "MATCH=$MATCH" --assign "MAJOR=$MAJOR" '{
         branch = $2;
         if (branch == MATCH) {
             print prev
         }
     }
-    { prev = branch }'
+    {
+        if (MAJOR == "N" || index($1, ".00") != 0) {
+            prev = branch;
+        };
+    }'
 )
 
 if [[ -z "$PREV" ]]; then
@@ -62,4 +79,5 @@ if [[ -z "$PREV" ]]; then
     exit 1
 fi
 
+set -x
 git diff --no-prefix "${REMOTE}/${PREV}..${REMOTE}/${MATCH}" "$@"
