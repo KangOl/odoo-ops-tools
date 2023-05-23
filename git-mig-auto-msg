@@ -68,11 +68,15 @@ def main(tag=None, message=None, coauthors=(), amend=False):
             guess_tag = '[FIX]'
         f = l[2:].strip()
 
-        if f in {"migrations/util.py", "migrations/report-migration.xml"}:
+        if f.startswith("migrations/util/"):
             util = True
             continue
 
-        _, module, version, *_ = f.split('/')
+        try:
+            _, module, version, *_ = f.split('/')
+        except ValueError:
+            # Not an upgrade script?
+            continue
         version = '.'.join(version.split('.')[:2]) if version != '0.0.0' else '0.0.0'
         mods[module].add(version)
 
