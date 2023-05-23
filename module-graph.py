@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from ast import literal_eval
 import os
 import optparse
 import glob
@@ -14,7 +15,7 @@ def load_information_from_description_file(module):
     for filename in MANIFEST_FILES:
         description_file = os.path.join(module, filename)
         if os.path.isfile(description_file):
-            return eval(open(description_file).read())
+            return literal_eval(open(description_file).read())
 
     return {}
 
@@ -22,7 +23,7 @@ def load_information_from_description_file(module):
 def get_valid_path(paths, module):
     for path in paths:
         full = os.path.join(path, module)
-        if os.path.exists(full):
+        if any(os.path.exists(os.path.join(full, manifest)) for manifest in MANIFEST_FILES):
             return full
     return None
 
@@ -47,6 +48,7 @@ else:
     modules = {vp for module in args for vp in [get_valid_path(opt.path, module)] if vp}
 
 all_modules = set(map(os.path.basename, modules))
+cli_modules = set(all_modules)  # copy
 
 print("digraph G {")
 
@@ -64,6 +66,9 @@ while modules:
                 else:
                     all_modules.add(name)
                     print(f"\t{name} [color=red]")
-            print("\t%s -> %s;" % (module_name, name))
+            print(f"\t{module_name} -> {name};")
+            if module_name in cli_modules:
+                print(f"\t{module_name} [color=yellow]")
+                cli_modules.discard(module_name)
 
 print("}")
