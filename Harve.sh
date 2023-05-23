@@ -5,9 +5,9 @@
 
 set -euo pipefail
 
-test "${DEBUG:-0}" != 0 && set -x
-
 : "${GH_TOKEN:?Please set a GH_TOKEN environment variable}"
+
+test "${DEBUG:-0}" != 0 && set -x
 
 # Ensure minimal git version
 printf '%s\n%s\n' 2.23 "$(git --version | cut -d" " -f3)" | sort --check=quiet --version-sort || \
@@ -68,7 +68,8 @@ $git fetch --all --prune --quiet --no-auto-gc --multiple --jobs="$jobs" 2>/dev/n
 rm -f "$workdir/.git/gc.log"
 $git gc --quiet
 
+: ${COMMIT:=4295585aff34ba9881ed7f64bce3481e3d217dcd}
 set -x
 # The search for the hash will return an error if not found. That the inverse of what we want.
-$git branch --all --contains 4295585aff34ba9881ed7f64bce3481e3d217dcd || exit 0
+$git branch --all --contains "${COMMIT}" || exit 0
 exit 1
