@@ -44,7 +44,7 @@ REMOTE = """\
 
 
 def forks(repo):
-    print(REMOTE.format(remote=repo.full_name, url=repo.git_url))
+    print(REMOTE.format(remote=repo.full_name, url=repo.ssh_url))
     if not repo.forks_count:
         return
     for frk in repo.get_forks():
